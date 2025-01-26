@@ -24,9 +24,19 @@ class Restaurant(db.Model, SerializerMixin):
     restaurant_pizzas = db.relationship('RestaurantPizza', back_populates = "restaurant", cascade = "all, delete-orphan")
     pizzas = association_proxy("restaurant_pizzas", "pizza")
     # add serialization rules
-    serialize_rules = ("-restaurant_pizzas",)
+    serialize_rules = ("-restaurant_pizzas.restaurant",)
     # add serialization rules
-
+    def to_dict(self, include_relationships=True):
+        restaurant_dict = {
+            "id": self.id,
+            "name": self.name,
+            "address": self.address,
+        }
+        if include_relationships:
+            restaurant_dict["restaurant_pizzas"] = [
+                restaurant_pizza.to_dict() for restaurant_pizza in self.restaurant_pizzas
+            ]
+        return restaurant_dict
     
 
     def __repr__(self):
@@ -47,6 +57,18 @@ class Pizza(db.Model, SerializerMixin):
     # add serialization rules
 
     serialize_rules = ('-restaurant_pizzas.pizza',)
+
+    def to_dict(self, include_relationships = True):
+        pizza_dict = {
+            "id": self.id,
+            "name": self.name,
+            "ingredients": self.ingredients
+        }
+        if include_relationships:
+            pizza_dict["restaurant_pizzas"] = [
+                restaurant_pizza.to_dict() for restaurant_pizza in self.restaurant_pizzas
+            ]
+        return pizza_dict
 
     def __repr__(self):
         return f"<Pizza {self.name}, {self.ingredients}>"

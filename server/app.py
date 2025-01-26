@@ -26,11 +26,10 @@ def index():
 
 @app.route("/restaurants", methods=['GET'])
 def restaurants():
-    restaurants = []
-
-    for restaurant in Restaurant.query.all():
-        restaurant_dict = restaurant.to_dict()
-        restaurants.append(restaurant_dict)
+    restaurants = [
+        restaurant.to_dict(include_relationships=False)
+        for restaurant in Restaurant.query.all()
+    ]
     
     response = make_response(
         restaurants,
@@ -61,17 +60,69 @@ def restaurant_by_id(id):
             response = make_response(restaurant_dict, 200)
 
             return response
-            
+
         elif request.method == 'DELETE':
             db.session.delete(restaurant)
             db.session.commit()
 
             response = make_response(
                 "",
-                200
+                204
             )
 
             return response
+
+@app.route("/pizzas", methods=['GET'])
+def pizzas():
+    pizzas = []
+    for pizza in Pizza.query.all():
+        pizza_dict = pizza.to_dict(include_relationships = False)
+        pizzas.append(pizza_dict)
+
+    response = make_response(
+        pizzas,
+        200
+    )
+
+    return response
+
+@app.route("/restaurant_pizzas", methods=['POST'])
+def restaurant_pizzas():
+    
+    data = request.get_json()
+
+    try:
+        restaurant_pizza = RestaurantPizza(
+            price = data["price"],
+            pizza_id = data["pizza_id"],
+            restaurant_id = data["restaurant_id"]
+        )
+
+        db.session.add(restaurant_pizza)
+        db.session.commit()
+
+        response_data = {
+            "id": restaurant_pizza.id,
+            "price": restaurant_pizza.price,
+            "pizza_id":restaurant_pizza.pizza_id,
+            "restaurant_id":restaurant_pizza.restaurant_id,
+            "pizza":restaurant_pizza.pizza.to_dict(),
+            "restaurant":restaurant_pizza.to_dict() 
+        }
+
+        return make_response(
+            response_data,
+            201
+        )
+
+    except Exception as e:
+        return make_response(
+            {
+                "errors": ["validation errors"]
+            },
+            400
+        )
+
 
 
 if __name__ == "__main__":
